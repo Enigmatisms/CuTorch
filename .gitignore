@@ -1,0 +1,5 @@
+build/
+dist/
+march.egg-info/
+.vscode/*
+!*.json

@@ -1,0 +1,2 @@
+nvcc -O3 -use_fast_math -gencode=arch=compute_70,code=sm_70 -dc -I/opt/libtorch/include/ -I/opt/libtorch/include/torch/csrc/api/include/ -I//usr/include/python3.6m src/sdf_kernel.cu src/marchingCubes.cu -Xcompiler -fPIC 
+nvcc -O3 -use_fast_math -gencode=arch=compute_70,code=sm_70 -dlink -L/usr/local/cuda-10.1/targets/x86_64-linux/lib/ -lcudadevrt -lcudart sdf_kernel.o marchingCubes.o -shared -o libdlink.so
