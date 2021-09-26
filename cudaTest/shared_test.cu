@@ -1,8 +1,12 @@
 #include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <opencv2/core.hpp>
+#define __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__
+#include <device_functions.h>
+#include <cuda_device_runtime_api.h>
 
-constexpr int MAT_SIZE = 16;
+constexpr int MAT_SIZE = 32;
 
 __global__ void MatMul(const float* const A, const float* const B, float* C) {
     int row = threadIdx.y;
@@ -10,9 +14,10 @@ __global__ void MatMul(const float* const A, const float* const B, float* C) {
     // __shared__ memory declared and allocated can be accessed with one block
     __shared__ float shared_a[MAT_SIZE][MAT_SIZE];
     __shared__ float shared_b[MAT_SIZE][MAT_SIZE];
+    printf("%f, %f\t", shared_a[row][col], shared_b[row][col]);
     shared_a[row][col] = A[row * MAT_SIZE + col];
     shared_b[row][col] = B[row * MAT_SIZE + col];
-    cudaDeviceSynchronize();
+    __syncthreads();
     float c_val = 0.0;
     for (int i = 0; i < MAT_SIZE; i++) {
         c_val += shared_a[row][i] * shared_b[i][col];
@@ -51,11 +56,11 @@ int main(int argc, char** argv) {
     MatMul <<<1, grid>>> (a_ptr, b_ptr, d_ptr);
     cudaMemcpy(D.ptr<float>(), d_ptr, mat_size, cudaMemcpyDeviceToHost);
     cv::Mat res = C - D;
-    printMat(A);
-    printMat(B);
-    printMat(C);
-    printMat(D);
-    printMat(res);
+    // printMat(A);
+    // printMat(B);
+    // printMat(C);
+    // printMat(D);
+    // printMat(res);
     cudaFree(a_ptr);
     cudaFree(b_ptr);
     cudaFree(d_ptr);

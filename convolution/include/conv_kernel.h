@@ -13,7 +13,12 @@
  * @brief implement convolution method by hand 
  * @return 
  */
-__global__ void convForward(const float* const data, float* output);
+__global__ void weightForward(const float* const data, const float* const kernel, int out_chan, float* output);
+
+/**
+ * @brief shared memory optimization might not be so meaningful here.
+ */
+__global__ void biasForward(const float* const data, const float* const bias, float* output);
 
 /**
  * @brief What is the standard input of a backward process
