@@ -5,6 +5,7 @@
 #define __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__
 #include <device_functions.h>
 #include <cuda_device_runtime_api.h>
+#include <Eigen/Dense>
 
 constexpr int MAT_SIZE = 32;
 

@@ -12,6 +12,11 @@ if (NOT OpenCV_FOUND)
     message("No appropriate opencv package found.")
 endif()
 
+find_package(Eigen3 REQUIRED)
+if(NOT Eigen3_FOUND)
+  message(FATAL_ERROR "Eigen3 not found.")
+endif()
+
 set(OpenCV_INCLUDE_DIRS "/home/sentinel/opencv-4.5.1/include/")
 set(${OpenCV_LIBS} "/home/sentinel/opencv-4.5.1/lib/")
 find_package(PythonLibs)
@@ -29,12 +34,14 @@ set(
     -gencode=arch=compute_61,code=sm_61
     -lcudadevrt -lcudart
 )
+set(-Wno-deprecated-declarations)
 SET(CUDA_SEPARABLE_COMPILATION ON)
 
 include_directories(
     .
     ./include
     ${OpenCV_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIRS}
     /usr/local/include/
 )
 
@@ -48,6 +55,16 @@ cuda_add_executable(Task
 
 target_link_libraries(
     Task
+    ${OpenCV_LIBS}
+    /usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudadevrt.a
+)
+
+cuda_add_executable(eigen
+    eigenCuda.cu
+)
+
+target_link_libraries(
+    eigen
     ${OpenCV_LIBS}
     /usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudadevrt.a
 )
