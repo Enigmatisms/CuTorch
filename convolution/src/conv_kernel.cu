@@ -1,3 +1,7 @@
+/**
+ * CUDA convolution kernel
+ * @author HQY @date 2021.9.26 
+ */
 #define __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__
 #include <device_functions.h>
 #include "../include/conv_kernel.h"
@@ -25,7 +29,7 @@ __global__ void convForward(const float* const data, const float* const kernel, 
         data_block[ch_id] += tmp;
         __syncthreads();                    // wait till c_i, k, k threads are all done
         if ((ch_id | x | y) == 0)           // execute only once (warp divergence)
-            output[b * out_chan * gbase1 + gbase1 * i + gbase2 * y + x];
+            output[b * out_chan * gbase1 + gbase1 * i + gbase2 * y + x] = tmp;
         __syncthreads();
         // bias is added in another kernel function
     }
