@@ -1,3 +1,7 @@
+#include <torch/extension.h>
+#include <vector>
+#include <ATen/NativeFunctions.h>
+#include <ATen/Config.h>
 #include "../include/conv_cpp.h"
 #include "../include/conv_kernel.h"
 
@@ -12,20 +16,60 @@ static void CheckCudaErrorAux (const char *file, unsigned line, const char *stat
 	exit (1);
 }
 
-/// input is already in GPU
-void convolutionForward(
-    const at::Tensor& img,
-    const at::Tensor& weights,
+at::Tensor convolution(
+    const at::Tensor& input,
+    const at::Tensor& weight,
     const at::Tensor& bias,
-    int in_chan, int out_chan, int k_size,
-    at::Tensor& out
 ) {
-    const float* const img_data = img.data_ptr<float>();
-    const float* const w_data = weights.data_ptr<float>();
-    const float* const b_data = bias.data_ptr<float>();
-    dim3 grid(img.size(0), img.size(2), img.size(3));
-    dim3 block(img.size(2), k_size, k_size);
-    convolutionForward <<<grid, block, out_chan>>>(img_data, w_data, out_chan, output.data_ptr<float>());
-    CUDA_CHECK_RETURN(cudaDeviceSynchronize());
-    biasForward <<<grid, out_chan>>> (img_data, b_data, output.data_ptr<float>());
+     
+}
+
+at::Tensor convolution_backward_weight(
+    const at::Tensor& input,
+    c10::ArrayRef<int64_t> weight_size,
+    const at::Tensor& grad_output,
+    c10::ArrayRef<int64_t> stride,
+    c10::ArrayRef<int64_t> padding,
+    c10::ArrayRef<int64_t> dilation,
+    int64_t groups,
+    bool benchmark,
+    bool deterministic,
+    bool allow_tf32) {
+
+    return at::cudnn_convolution_backward_weight(
+        weight_size,
+        grad_output,
+        input,
+        padding,
+        stride,
+        dilation,
+        groups,
+        benchmark,
+        deterministic,
+        allow_tf32);
+}
+
+at::Tensor convolution_backward_input(
+    c10::ArrayRef<int64_t> input_size,
+    const at::Tensor& weight,
+    const at::Tensor& grad_output,
+    c10::ArrayRef<int64_t> stride,
+    c10::ArrayRef<int64_t> padding,
+    c10::ArrayRef<int64_t> dilation,
+    int64_t groups,
+    bool benchmark,
+    bool deterministic,
+    bool allow_tf32) {
+
+    return at::cudnn_convolution_backward_input(
+        input_size,
+        grad_output,
+        weight,
+        padding,
+        stride,
+        dilation,
+        groups,
+        benchmark,
+        deterministic,
+        allow_tf32);
 }

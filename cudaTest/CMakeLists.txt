@@ -26,6 +26,12 @@ if (TEST_CUDA)
     add_definitions(-DCUDA_TEST)
 endif(TEST_CUDA)
 
+find_package(OpenMP)
+if (OPENMP_FOUND)
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
 find_package(CUDA REQUIRED)
 set(
     CUDA_NVCC_FLAGS
@@ -66,5 +72,14 @@ cuda_add_executable(eigen
 target_link_libraries(
     eigen
     ${OpenCV_LIBS}
+    /usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudadevrt.a
+)
+
+cuda_add_executable(minval
+    atomicMin.cu
+)
+
+target_link_libraries(
+    minval
     /usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudadevrt.a
 )

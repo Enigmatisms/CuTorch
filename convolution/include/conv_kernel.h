@@ -13,6 +13,10 @@
  * @brief implement convolution method by hand 
  * @return 
  */
+
+typedef float* FloatPtr;
+typedef const FloatPtr const ConstFloatPtr;
+
 __global__ void weightForward(const float* const data, const float* const kernel, int out_chan, float* output);
 
 /**
@@ -25,3 +29,12 @@ __global__ void biasForward(const float* const data, const float* const bias, fl
  * @return __global__ 
  */
 __global__ void convBackward(const float* const eval, float* grad);
+
+/**
+ * @brief 卷积算子，前向运算版本2
+ */
+
+__global__ void convForwardV2(
+    ConstFloatPtr data, ConstFloatPtr kernel, ConstFloatPtr bias, 
+    FloatPtr output, const int ks, const int co_num
+);

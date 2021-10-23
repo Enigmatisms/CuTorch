@@ -8,9 +8,7 @@
                 "${workspaceFolder}/marchingCubes/include/**",
                 "/opt/libtorch/include/**",
                 "/opt/libtorch/include/torch/csrc/api/include/**",
-                "/usr/local/cuda-10.1/include/**",
-                "/usr/include/**",
-                "/usr/local/include/**"
+                "/usr/local/cuda-10.1/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
