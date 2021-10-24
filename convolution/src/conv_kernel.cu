@@ -44,6 +44,8 @@ __global__ void biasForward(const float* const data, const float* const bias, fl
 
 
 /// @note 输入是(N, C_i, H, W)以及(C_o, C_i, K, K)的卷积核,输出是(N, C_O, H, W)
+/// @note 注意，输入的data进行了padding，而输出output没有padding，不考虑stride
+/// @ 输入图像从pad开始 到x+pad结束
 __global__ void convForwardV2(
     ConstFloatPtr data, ConstFloatPtr kernel, ConstFloatPtr bias, 
     FloatPtr output, const int ks, const int co_num
@@ -52,14 +54,13 @@ __global__ void convForwardV2(
     /// 一部分是原始数据，另一部分是累加结果
     /// 一个函数只处理batch中的一张图片中的一个点(x, y)
     extern __shared__ float proc[];
-    FloatPtr co_output = NULL;     // 位置需要指定
-    const int row_offset = gridDim.z, chan_offset = gridDim.y * row_offset;
     const int n = blockIdx.x, y = blockIdx.y, x = blockIdx.z, c = threadIdx.x, k = threadIdx.y, hks = (ks / 2);
-    const int row_base = y * row_offset;
+    const int row_offset = gridDim.z + (hks << 1), chan_offset = (gridDim.y + hks << 1) * row_offset;
+    const int row_base = (y + hks) * row_offset;
     const int p_row_offset = ks, p_chn_offset = ks * ks, co_offset = blockDim.x * p_chn_offset;
-    const int full_base = n * chan_offset * blockDim.x + c * chan_offset + row_base + x, 
+    const int full_base = n * chan_offset * blockDim.x + c * chan_offset + row_base + x + hks, 
               p_full_base = c * p_chn_offset + k * p_row_offset;
-    co_output = &proc[co_num * co_offset];          // 初始化为 0
+    FloatPtr co_output = &proc[co_num * co_offset];     // 位置需要指定
     for (int i = -hks; i <= hks; i++) {
         proc[p_full_base + i] = data[full_base + (k - hks) * row_offset + i];
     }
@@ -74,16 +75,40 @@ __global__ void convForwardV2(
     }
     __syncthreads();
     // 从共享内存复制到global内存
+    const int row_base_no_pad = y * gridDim.z;
     if (k == 0) {       // warp divergence
         const int obatch_base = n * co_num * chan_offset;
         for (int i = 0; i < 4; i++) {
             const int id = blockDim.x * i + c;
             if (id >= co_num) break;
-            output[obatch_base + id * chan_offset + row_base + x] = co_output[id] + bias[id];
+            output[obatch_base + id * chan_offset + row_base_no_pad + x] = co_output[id] + bias[id];
         }
     }
 }
 
-__global__ void convBackwardV2() {
+/// 所以，设计应该是：<<<(N, C_o,  K * K), (C_i, H, W)>>>, 输入的x经过padding
+__global__ void convBackwardForW(
+    ConstFloatPtr grad_upstream, ConstFloatPtr x, FloatPtr grad_w, const int k
+) {
+    extern __shared__ float all_ci[];
+    const int hk = (k >> 1);
+    const int r_offset = blockDim.z, r_offset_p = r_offset + (hk << 1),
+        c_offset = blockDim.y * r_offset, c_offset_p = (blockDim.y + (hk << 1) * r_offset_p),
+        b_offset = blockDim.x * c_offset, b_offset_p = blockDim.x * c_offset_p;
+    const int k2 = k * k, wc_offset = blockDim.x * k2;
+    const int ci = threadIdx.x, n = blockIdx.x, co = blockIdx.y, w_id = blockIdx.z, k_row = w_id / k, k_col = w_id % k;
+    FloatPtr this_ci = &all_ci[ci];
+    float val = x[n * b_offset_p + ci * c_offset_p + (threadIdx.y + k_row) * r_offset_p + k_col + threadIdx.z] *
+        grad_upstream[n * b_offset + co * c_offset + threadIdx.y * r_offset + threadIdx.z];
+    atomicAdd_system(this_ci, val);
+    __syncthreads();
+    if (threadIdx.y == 0 && threadIdx.z == 0) {
+        grad_w[co * wc_offset + ci * k2 + w_id] = all_ci[ci];
+    }
+}
 
+__global__ void convBackwardForX(
+    
+) {
+    ;
 }
